@@ -60,26 +60,39 @@ ${denoCmd} run ${flags} ${codeURI}`;
   await Deno.chmod(targetPath, 0o664);
 };
 
+const scriptURItoConfigURI = (denoURI: string) =>
+  `${denoURI.split("/").slice(0, -1).join("/")}/native-host-params.ts`;
+
 yargs(Deno.args)
   .command(
-    "install",
+    "install <denoURI>",
     "install a deno native messaging server",
     (yargs: any) => {
+      yargs.positional("denoURI", {
+        description: "The public url of the deno script to run",
+      });
+      yargs.option("autoConfig");
+      yargs.describe(
+        "lookup config in `native-host-params.ts` sibling file of the main URI"
+      );
+
       yargs.option("resourceId");
-      yargs.demandOption("resourceId");
       yargs.describe("The resource id of the native messaging host");
-      yargs.option("denoURI");
-      yargs.demandOption("denoURI");
-      yargs.describe("denoURI", "The public url of the deno script to run");
       yargs.option("description");
-      yargs.demandOption("description");
       yargs.array("allowedOrigins");
-      yargs.demandOption("allowedOrigins");
       return yargs;
     },
     async (argv: Arguments) => {
       const chromeDir = await findBrowserConfigDir();
-      const { resourceId, denoURI, allowedOrigins, description } = argv;
+      const { denoURI, autoConfig } = argv;
+      const { resourceId, allowedOrigins, description } = await (async () => {
+        if (!autoConfig) {
+          return argv;
+        }
+        const configUrl = scriptURItoConfigURI(denoURI);
+        const res = await import(configUrl);
+        return res;
+      })();
 
       const targetPathDir = `${homepath}/.local/var/deno-native-messaging`;
       await ensureDirSafe(targetPathDir);
@@ -102,8 +115,19 @@ yargs(Deno.args)
     }
   )
   .check(async (argv: Arguments) => {
-    const { resourceId, denoURI, allowedOrigins, description } = argv;
-    const res = await fetch(denoURI);
+    const {
+      resourceId,
+      autoConfig,
+      denoURI,
+      allowedOrigins,
+      description,
+    } = argv;
+    await import(denoURI);
+    if (autoConfig) {
+      await import(scriptURItoConfigURI(denoURI));
+      // if the above resolves ignore remaining tests
+      return;
+    }
     allowedOrigins.forEach((o: string) => {
       if (!o.startsWith("chrome-extension://")) {
         throw new Error(
@@ -118,5 +142,4 @@ yargs(Deno.args)
       throw new Error("Provide a description");
     }
   })
-  .strictCommands()
-  .demandCommand(1).argv;
+  .strictCommands().argv;
