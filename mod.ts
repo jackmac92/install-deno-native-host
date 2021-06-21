@@ -1,15 +1,45 @@
 import { exists, ensureDir } from "https://deno.land/std@0.99.0/fs/mod.ts";
 import yargs from "https://deno.land/x/yargs/deno.ts";
 import { Arguments } from "https://deno.land/x/yargs/deno-types.ts";
+import os from "https://deno.land/x/dos@v0.11.0/mod.ts";
 
 const homepath = Deno.env.get("HOME");
+const encoded = new TextEncoder().encode;
 
-const findBrowserConfigDir = async () => {
-  const orderedLocationsToCheck = [
-    ".config/google-chrome",
-    ".config/google-chrome-beta",
-    "Library/Application Support/Google/Chrome",
-  ];
+const findBrowserConfigDir = async (browser) => {
+  let orderedLocationsToCheck = [];
+  switch (`${os.platform()} ${browser}`) {
+    case "linux chrome":
+      orderedLocationsToCheck = [
+        ".config/google-chrome",
+        ".config/google-chrome-beta",
+      ];
+    case "linux chromium":
+      orderedLocationsToCheck = [
+        ".config/chromium",
+      ];
+    case "linux brave":
+      orderedLocationsToCheck = [
+        ".config/BraveSoftware/Brave-Browser",
+      ];
+    case "linux vivaldi":
+      orderedLocationsToCheck = [
+        ".config/vivaldi",
+      ];
+    case "darwin chrome":
+      orderedLocationsToCheck = [
+        "Library/Application Support/Google/Chrome",
+        "Library/Application Support/Google/Chrome Beta",
+      ];
+    case "darwin chromium":
+      orderedLocationsToCheck = [
+        "Library/Application Support/Chromium",
+      ];
+    case "darwin vivaldi":
+      orderedLocationsToCheck = [
+        "Library/Application Support/Vivaldi",
+      ];
+  }
 
   for (let potentialLocation of orderedLocationsToCheck) {
     const p = `${homepath}/${potentialLocation}`;
@@ -20,7 +50,6 @@ const findBrowserConfigDir = async () => {
   throw new Error("Unable to locate chrome config dir");
 };
 
-const encoded = new TextEncoder().encode;
 
 const ensureDirSafe = async (path: string) => {
   const components = path.split("/");
@@ -73,18 +102,31 @@ yargs(Deno.args)
       });
       yargs.option("autoConfig");
       yargs.describe(
+        "autoConfig",
         "lookup config in `native-host-params.ts` sibling file of the main URI"
       );
 
+      yargs.option("browser");
+      yargs.describe(
+        "browser",
+        "the target browser for the native host extension"
+      );
+      yargs.default("browser", "chrome");
+
       yargs.option("resourceId");
-      yargs.describe("The resource id of the native messaging host");
+      yargs.describe(
+        "resourceId",
+        "The resource id of the native messaging host"
+      );
+
       yargs.option("description");
+
       yargs.array("allowedOrigins");
+
       return yargs;
     },
     async (argv: Arguments) => {
-      const chromeDir = await findBrowserConfigDir();
-      const { denoURI, autoConfig } = argv;
+      const { denoURI, autoConfig, browser } = argv;
       const { resourceId, allowedOrigins, description } = await (async () => {
         if (!autoConfig) {
           return argv;
@@ -107,6 +149,7 @@ yargs(Deno.args)
         type: "stdio",
       };
 
+      const chromeDir = await findBrowserConfigDir(browser);
       const nativeMessagingHostJsonPath = `${chromeDir}/NativeMessagingHosts/${resourceId}.json`;
       Deno.writeFile(
         nativeMessagingHostJsonPath,
