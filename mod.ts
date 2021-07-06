@@ -60,7 +60,7 @@ const ensureDirSafe = async (path: string) => {
 const writeShellScript = async (
     targetPath: string,
     codeURI: string,
-    denoFlags = []
+    denoFlags: string
 ) => {
     const denoCmd = Deno.execPath();
     /// interesting idea below but just passing a string seems more straightforward
@@ -93,6 +93,7 @@ yargs(Deno.args)
                 "denoFlags",
                 "flags to pass to deno when invoking the native host"
             );
+            yargs.default("denoFlags", "");
 
             yargs.option("browser");
             yargs.describe(
