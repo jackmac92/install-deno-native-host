@@ -7,7 +7,7 @@ const homepath = Deno.env.get("HOME");
 const encoded = new TextEncoder().encode;
 
 const findBrowserConfigDir = async (browser) => {
-  let orderedLocationsToCheck = [];
+  let orderedLocationsToCheck: string[] = [];
   switch (`${os.platform()} ${browser}`) {
     case "linux chrome":
       orderedLocationsToCheck = [
@@ -41,7 +41,7 @@ const findBrowserConfigDir = async (browser) => {
       ];
   }
 
-  for (let potentialLocation of orderedLocationsToCheck) {
+  for (const potentialLocation of orderedLocationsToCheck) {
     const p = `${homepath}/${potentialLocation}`;
     if (await exists(p)) {
       return p;
