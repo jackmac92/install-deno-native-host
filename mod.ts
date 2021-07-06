@@ -71,7 +71,7 @@ set -euo pipefail
 ${denoCmd} run ${flags} ${codeURI}`;
 
     await Deno.writeFile(targetPath, encoded(scriptContent));
-    await Deno.chmod(targetPath, 0o664);
+    await Deno.chmod(targetPath, 0o777);
 };
 
 const scriptURItoConfigURI = (denoURI: string) =>
