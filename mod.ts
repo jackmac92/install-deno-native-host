@@ -63,8 +63,9 @@ const writeShellScript = async (
     denoFlags = []
 ) => {
     const denoCmd = Deno.execPath();
-    const flags = denoFlags.map((f) => `--${f}`).join(" ");
-    const scriptContent = `#!/usr/bin/env bash\n${denoCmd} run ${flags} ${codeURI}`;
+    /// interesting idea below but just passing a string seems more straightforward
+    // const flags = denoFlags.map((f) => `--${f}`).join(" ");
+    const scriptContent = `#!/usr/bin/env bash\n${denoCmd} run ${denoFlags} ${codeURI}`;
 
     await Deno.writeFile(targetPath, encoded(scriptContent));
     await Deno.chmod(targetPath, 0o777);
@@ -87,6 +88,12 @@ yargs(Deno.args)
                 "lookup config in `native-host-params.ts` sibling file of the main URI"
             );
 
+            yargs.option("denoFlags");
+            yargs.describe(
+                "denoFlags",
+                "flags to pass to deno when invoking the native host"
+            );
+
             yargs.option("browser");
             yargs.describe(
                 "browser",
@@ -107,7 +114,7 @@ yargs(Deno.args)
             return yargs;
         },
         async (argv: Arguments) => {
-            const { denoURI, autoConfig, browser } = argv;
+            const { denoURI, autoConfig, browser, denoFlags } = argv;
             console.log("Starting deno native host installation");
             const { resourceId, allowedOrigins, description } =
                 await (async () => {
@@ -122,7 +129,7 @@ yargs(Deno.args)
             const targetPathDir = `${homepath}/.local/var/deno-native-messaging`;
             await ensureDirSafe(targetPathDir);
             const targetPath = `${targetPathDir}/${resourceId}.sh`;
-            await writeShellScript(targetPath, denoURI);
+            await writeShellScript(targetPath, denoURI, denoFlags);
 
             const content = {
                 name: resourceId,
