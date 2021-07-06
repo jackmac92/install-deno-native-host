@@ -64,11 +64,7 @@ const writeShellScript = async (
 ) => {
     const denoCmd = Deno.execPath();
     const flags = denoFlags.map((f) => `--${f}`).join(" ");
-    const scriptContent = `
-#!/usr/bin/env bash
-set -euo pipefail
-
-${denoCmd} run ${flags} ${codeURI}`;
+    const scriptContent = `#!/usr/bin/env bash\n${denoCmd} run ${flags} ${codeURI}`;
 
     await Deno.writeFile(targetPath, encoded(scriptContent));
     await Deno.chmod(targetPath, 0o777);
