@@ -6,7 +6,7 @@ import os from "https://deno.land/x/dos@v0.11.0/mod.ts";
 const homepath = Deno.env.get("HOME");
 const encoded = new TextEncoder().encode;
 
-const findBrowserConfigDir = async (browser) => {
+const findBrowserConfigDir = async (browser: string) => {
   let orderedLocationsToCheck: string[] = [];
   switch (`${os.platform()} ${browser}`) {
     case "linux chrome":
@@ -127,6 +127,7 @@ yargs(Deno.args)
     },
     async (argv: Arguments) => {
       const { denoURI, autoConfig, browser } = argv;
+      console.log("Starting deno native host installation");
       const { resourceId, allowedOrigins, description } = await (async () => {
         if (!autoConfig) {
           return argv;
@@ -155,6 +156,7 @@ yargs(Deno.args)
         nativeMessagingHostJsonPath,
         encoded(JSON.stringify(content))
       );
+      console.log("Install success!")
     }
   )
   .check(async (argv: Arguments) => {
@@ -165,7 +167,9 @@ yargs(Deno.args)
       allowedOrigins,
       description,
     } = argv;
+    console.log("Starting validation")
     await import(denoURI);
+    console.log("Pulled config")
     if (autoConfig) {
       await import(scriptURItoConfigURI(denoURI));
       // if the above resolves ignore remaining tests
@@ -184,5 +188,8 @@ yargs(Deno.args)
     if (description.length === 0) {
       throw new Error("Provide a description");
     }
+    console.log("Validated native host!")
   })
+  // @ts-expect-error
   .strictCommands().argv;
+
