@@ -10,7 +10,9 @@ const encoded = (val: string) => encoder.encode(val);
 const findBrowserConfigDir = async (browser: string) => {
   const osPlatform = os.platform();
   console.log(`Looking up dir for ${browser} on ${osPlatform}`);
-  const orderedLocationsToCheck = {
+
+  //@ts-expect-error
+  const orderedLocationsToCheck: string | undefined = {
     "linux chrome": [".config/google-chrome", ".config/google-chrome-beta"],
     "linux chromium": [".config/chromium"],
     "linux brave": [".config/BraveSoftware/Brave-Browser"],
@@ -130,6 +132,7 @@ yargs(Deno.args)
         return res;
       })();
 
+      console.log("Generated config");
       const targetPathDir = `${homepath}/.local/var/deno-native-messaging`;
       await ensureDirSafe(targetPathDir);
       const targetPath = `${targetPathDir}/${resourceId}.sh`;
@@ -145,6 +148,7 @@ yargs(Deno.args)
 
       const chromeDir = await findBrowserConfigDir(browser);
       const nativeMessagingHostJsonPath = `${chromeDir}/NativeMessagingHosts/${resourceId}.json`;
+      console.log("Writing file");
       Deno.writeFile(
         nativeMessagingHostJsonPath,
         encoded(JSON.stringify(content))
