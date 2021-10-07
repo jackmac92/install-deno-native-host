@@ -125,7 +125,7 @@ yargs(Deno.args)
         const res = await import(configUrl);
         if (!res.denoFlags) {
           // insecure, but if you choose autoConfig give you a "just works" experience
-          denoFlags = '-A --unstable'
+          res.denoFlags = "-A --unstable";
         }
         return res;
       })();
