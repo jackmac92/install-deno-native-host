@@ -41,8 +41,8 @@ const findBrowserConfigDir = async (browser: string) => {
 const ensureDirSafe = async (path: string) => {
   const components = path.split("/");
 
-  const [_, pathAncestors] = Array(components.length).reduce(
-    (acc, el) => {
+  const [_, pathAncestors] = components.reduce(
+    (acc, _) => {
       const [pathComponents, result] = acc;
       const nextPathComponents = [...pathComponents];
       const nextComponent = nextPathComponents.join("/");
@@ -52,8 +52,9 @@ const ensureDirSafe = async (path: string) => {
       }
       return [nextPathComponents, [nextComponent, ...result]];
     },
-    [components, []]
+    [components, Array()]
   );
+
   for (let ancestor of pathAncestors) {
     await ensureDir(ancestor);
   }
