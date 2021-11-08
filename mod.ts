@@ -1,7 +1,8 @@
-import { exists, ensureDir } from "https://deno.land/std@0.99.0/fs/mod.ts";
+import { exists } from "https://deno.land/std@0.99.0/fs/mod.ts";
 import yargs from "https://deno.land/x/yargs/deno.ts";
 import { Arguments } from "https://deno.land/x/yargs/deno-types.ts";
 import os from "https://deno.land/x/dos@v0.11.0/mod.ts";
+import { ensureDirSafe } from "https://gitlab.com/jackmac92/ensurePathExists/-/raw/master/mod.ts";
 
 const homepath = Deno.env.get("HOME");
 const encoder = new TextEncoder();
@@ -38,28 +39,9 @@ const findBrowserConfigDir = async (browser: string) => {
   throw new Error("Unable to locate chrome config dir");
 };
 
-const ensureDirSafe = async (path: string) => {
-  const components = path.split("/");
-
-  const [_, pathAncestors] = components.reduce(
-    (acc, _) => {
-      const [pathComponents, result] = acc;
-      const nextPathComponents = [...pathComponents];
-      const nextComponent = nextPathComponents.join("/");
-      nextPathComponents.pop();
-      if (nextComponent === homepath) {
-        return acc;
-      }
-      return [nextPathComponents, [nextComponent, ...result]];
-    },
-    [components, Array()]
-  );
 const lookupDenoPath = async () => {
   const x = Deno.run({ cmd: ["which", "deno"] });
 
-  for (let ancestor of pathAncestors) {
-    await ensureDir(ancestor);
-  }
   await x.status();
 
   const o = await x.output();
