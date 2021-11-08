@@ -51,7 +51,8 @@ const lookupDenoPath = async () => {
   const o = await x.output();
 
   const decoder = new TextDecoder();
-  return decoder.decode(o);
+  const outstr = decoder.decode(o);
+  return outstr.split("\n").filter(Boolean)[0];
 };
 
 const writeShellScript = async (
