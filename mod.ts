@@ -54,10 +54,18 @@ const ensureDirSafe = async (path: string) => {
     },
     [components, Array()]
   );
+const lookupDenoPath = async () => {
+  const x = Deno.run({ cmd: ["which", "deno"] });
 
   for (let ancestor of pathAncestors) {
     await ensureDir(ancestor);
   }
+  await x.status();
+
+  const o = await x.output();
+
+  const decoder = new TextDecoder();
+  return decoder.decode(o);
 };
 
 const writeShellScript = async (
@@ -65,9 +73,8 @@ const writeShellScript = async (
   codeURI: string,
   denoFlags: string
 ) => {
-  const denoCmd = Deno.execPath();
-  /// interesting idea below but just passing a string seems more straightforward
-  // const flags = denoFlags.map((f) => `--${f}`).join(" ");
+  const denoCmd = await lookupDenoPath();
+
   const scriptContent = `#!/usr/bin/env bash\n${denoCmd} run ${denoFlags} ${codeURI}`;
 
   await Deno.writeFile(targetPath, encoded(scriptContent));
