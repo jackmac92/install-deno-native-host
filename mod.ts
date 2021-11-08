@@ -40,7 +40,11 @@ const findBrowserConfigDir = async (browser: string) => {
 };
 
 const lookupDenoPath = async () => {
-  const x = Deno.run({ cmd: ["which", "deno"] });
+  const x = Deno.run({
+    cmd: ["which", "deno"],
+    stdout: "piped",
+    stderr: "piped",
+  });
 
   await x.status();
 
