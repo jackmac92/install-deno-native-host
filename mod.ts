@@ -63,9 +63,12 @@ const writeShellScript = async (
   const denoCmd = await lookupDenoPath();
 
   const scriptContent = `#!/usr/bin/env bash\n${denoCmd} run ${denoFlags} ${codeURI}`;
-
+  const loadProc = Deno.run({
+    cmd: [denoCmd, "cache", ...denoFlags.split(" ").filter(Boolean), codeURI],
+  });
   await Deno.writeFile(targetPath, encoded(scriptContent));
   await Deno.chmod(targetPath, 0o777);
+  await loadProc.status();
 };
 
 const scriptURItoConfigURI = (denoURI: string) =>
