@@ -1,4 +1,4 @@
-import { exists } from "https://deno.land/std@0.99.0/fs/mod.ts";
+import { exists } from "https://deno.land/std/fs/mod.ts";
 import yargs from "https://deno.land/x/yargs/deno.ts";
 import { Arguments } from "https://deno.land/x/yargs/deno-types.ts";
 import os from "https://deno.land/x/dos@v0.11.0/mod.ts";
@@ -12,7 +12,6 @@ const findBrowserConfigDir = async (browser: string) => {
   const osPlatform = os.platform();
   console.log(`Looking up dir for ${browser} on ${osPlatform}`);
 
-  //@ts-expect-error
   const orderedLocationsToCheck: string | undefined = {
     "linux chrome": [".config/google-chrome", ".config/google-chrome-beta"],
     "linux chromium": [".config/chromium"],
@@ -39,36 +38,19 @@ const findBrowserConfigDir = async (browser: string) => {
   throw new Error("Unable to locate chrome config dir");
 };
 
-const lookupDenoPath = async () => {
-  const x = Deno.run({
-    cmd: ["which", "deno"],
-    stdout: "piped",
-    stderr: "piped",
-  });
-
-  await x.status();
-
-  const o = await x.output();
-
-  const decoder = new TextDecoder();
-  const outstr = decoder.decode(o);
-  return outstr.split("\n").filter(Boolean)[0];
-};
-
 const writeShellScript = async (
   targetPath: string,
   codeURI: string,
-  denoFlags: string
+  denoFlags: string,
 ) => {
-  const denoCmd = await lookupDenoPath();
+  const scriptContent = `#!/usr/bin/env bash\n/usr/bin/env deno run ${denoFlags} ${codeURI}`;
 
-  const scriptContent = `#!/usr/bin/env bash\n${denoCmd} run ${denoFlags} ${codeURI}`;
-  const loadProc = Deno.run({
-    cmd: [denoCmd, "cache", ...denoFlags.split(" ").filter(Boolean), codeURI],
+  const loadProc = new Deno.Command(Deno.execPath(), {
+    args: ["cache", ...denoFlags.split(" ").filter(Boolean), codeURI],
   });
   await Deno.writeFile(targetPath, encoded(scriptContent));
   await Deno.chmod(targetPath, 0o777);
-  await loadProc.status();
+  await loadProc.output();
 };
 
 const scriptURItoConfigURI = (denoURI: string) =>
@@ -85,27 +67,27 @@ yargs(Deno.args)
       yargs.option("autoConfig");
       yargs.describe(
         "autoConfig",
-        "lookup config in `native-host-params.ts` sibling file of the main URI"
+        "lookup config in `native-host-params.ts` sibling file of the main URI",
       );
 
       yargs.option("denoFlags");
       yargs.describe(
         "denoFlags",
-        "flags to pass to deno when invoking the native host"
+        "flags to pass to deno when invoking the native host",
       );
       yargs.default("denoFlags", "");
 
       yargs.option("browser");
       yargs.describe(
         "browser",
-        "the target browser for the native host extension"
+        "the target browser for the native host extension",
       );
       yargs.default("browser", "chrome");
 
       yargs.option("resourceId");
       yargs.describe(
         "resourceId",
-        "The resource id of the native messaging host"
+        "The resource id of the native messaging host",
       );
 
       yargs.option("description");
@@ -149,10 +131,10 @@ yargs(Deno.args)
       console.log("Writing file");
       Deno.writeFile(
         nativeMessagingHostJsonPath,
-        encoded(JSON.stringify(content))
+        encoded(JSON.stringify(content)),
       );
       console.log("Install success!");
-    }
+    },
   )
   // .check( /* async */ (argv: Arguments) => {
   //   const { resourceId, autoConfig, denoURI, allowedOrigins, description } =
@@ -178,5 +160,5 @@ yargs(Deno.args)
   //   }
   //   console.log("Validated native host!");
   // })
-  // @ts-expect-error
+  // @ts-expect-error `argv`
   .strictCommands().argv;
